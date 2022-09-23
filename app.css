@@ -1,0 +1,30 @@
+div.app-controls {
+	margin-top: 10px;
+	text-align: center;
+}
+
+.btn-primary,
+.btn-primary:focus,
+.btn-primary:hover {
+	background-color: teal;
+	border-color: teal;
+}
+
+.btn-primary.disabled, .btn-primary:disabled {
+	background-color: grey;
+	border-color: grey;
+}
+
+canvas {
+	display: block;
+	margin-bottom: 15px;
+}
+
+div#text-container {
+	margin-bottom: 15px;
+	overflow-y: auto;
+}
+
+div#loading-screen {
+	text-align: center;
+}
