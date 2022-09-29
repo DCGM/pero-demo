@@ -50,8 +50,10 @@ window.addEventListener('popstate', (event) => {
 
 async function send() {
     $('#uploadingMessage').collapse('show');
-        
-    let response = await fetch('https://pckiss.fit.vutbr.cz:8001/upload_image', {
+
+    upload_url = window.location.origin + '/upload_image'
+
+    let response = await fetch(upload_url, {
         method: 'POST',
         headers: {
             'Accept': 'application/json',
