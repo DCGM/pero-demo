@@ -1,0 +1,4 @@
+[submodule "pero-ocr"]
+	path = pero-ocr
+	url = https://github.com/DCGM/pero-ocr.git
+	branch = develop

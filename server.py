@@ -5,8 +5,8 @@ import argparse
 import numpy as np
 from flask import Flask, send_from_directory, send_file, json, request
 
-from pero_ocr.document_ocr.layout import PageLayout
-from pero_ocr.confidence_estimation import get_line_confidence
+from pero_ocr.core.layout import PageLayout
+from pero_ocr.core.confidence_estimation import get_line_confidence
 
 import config_helper
 

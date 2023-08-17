@@ -5,6 +5,7 @@ import config_helper
 import configparser
 import cv2
 import time
+import torch
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from datetime import datetime
@@ -118,7 +119,7 @@ def main():
     pipeline_config.read(args.pipeline_config)
 
     log("Initializing PageParser")
-    page_parser = PageParser(pipeline_config, config_path=os.path.dirname(args.pipeline_config))
+    page_parser = PageParser(pipeline_config, torch.device('cuda'), config_path=os.path.dirname(args.pipeline_config))
 
     log("Initializing observer and handler")
     observer = Observer()
