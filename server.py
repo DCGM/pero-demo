@@ -10,7 +10,6 @@ from pero_ocr.core.confidence_estimation import get_line_confidence
 
 import config_helper
 
-# configuration = config_helper.parse_configuration("/home/ikiss/projects/pero/experiments/pero-demo/server_config.ini")
 configuration = None
 app = Flask(__name__)
 
