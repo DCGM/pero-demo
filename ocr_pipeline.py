@@ -3,6 +3,7 @@ import sys
 import argparse
 import config_helper
 import configparser
+import traceback
 import cv2
 import time
 import torch
@@ -15,6 +16,7 @@ from pero_ocr.document_ocr.page_parser import PageParser
 
 
 import faulthandler
+
 
 class NewFileHandler(FileSystemEventHandler):
     def __init__(self, page_parser, output_xmls_path, output_logits_path, output_error_path):
@@ -63,7 +65,9 @@ class NewFileHandler(FileSystemEventHandler):
                 page_layout.save_logits(output_logits_path)
 
             except:
-                log("Exception raised during processing. Saving error file.", file_id)
+                log("Exception raised during processing:", file_id)
+                log(traceback.format_exc(), file_id)
+                log("Saving error file.", file_id)
                 self.save_error_file(file_id)
 
     def save_error_file(self, file_id):

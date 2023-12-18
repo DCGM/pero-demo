@@ -66,6 +66,7 @@ async function send() {
     requestId = data['request_id'];
     window.history.pushState(null, "PERO App", '?id=' + requestId);
 
+    $('#uploadingMessage').collapse('hide');
     controller.goForward();
 }
 

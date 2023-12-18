@@ -2,3 +2,16 @@
     display: none;
     visibility: collapse;
 }
+
+button {
+    margin: 0px 16px;
+}
+
+button img {
+    height: 32px;
+}
+
+button img.inverted {
+    -webkit-filter: invert(100%);
+    filter: invert(100%);
+}

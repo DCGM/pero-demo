@@ -37,7 +37,7 @@ class Controller {
     }
 
     goStartEventHandler(e) {
-        window.location = '/';
+        window.history.pushState({}, document.title, "/");
         this.controller.currentPage = 0;
         this.controller.showCurrentPage();
     }
@@ -53,7 +53,7 @@ class Controller {
     }
 
     goStart() {
-        window.location = '/';
+        window.history.pushState({}, document.title, "/");
         this.currentPage = 0;
         this.showCurrentPage();
     }
