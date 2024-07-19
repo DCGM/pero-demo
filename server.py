@@ -147,7 +147,9 @@ def calculate_line_confidence(line):
     else:
         confidences = np.array([])
 
-    return list(confidences)
+    confidences = [float(confidence) for confidence in confidences]
+
+    return confidences
 
 
 def save_error_file(request_id):
