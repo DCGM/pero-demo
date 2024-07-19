@@ -88,19 +88,13 @@ def get_lines(request_id):
 
         page_layout.load_logits(logits_file_path)
 
-        # TODO: Calculate confidences
+        lines = convert_lines(page_layout)
+
         data = {
             "image_id": request_id,
             "width": width,
             "height": height,
-            "lines": [{
-                "id": line.id,
-                "text": line.transcription,
-                "np_points": [[int(coordinates[0]), int(coordinates[1])] for coordinates in line.polygon],
-                "np_heights": list(line.heights),
-                "np_confidences": calculate_line_confidence(line),
-                "ligatures_mapping": [[x] for x in range(len(line.transcription))]
-            } for line in page_layout.lines_iterator()]
+            "lines": lines
         }
 
         response = app.response_class(
@@ -131,6 +125,49 @@ def get_logits_path(request_id):
 
 def get_errors_path(request_id):
     return os.path.join(configuration["requests"]["errors_path"], f"{request_id}.txt")
+
+
+def convert_lines(page_layout):
+    lines = []
+
+    for region in page_layout.regions:
+        if region.category in {"text", None}:
+            for line in region.lines:
+                if line.category in {"text", None}:
+                    lines.append(convert_line(line))
+
+        elif region.category == "image":
+            lines.append(convert_image(region))
+
+    return lines
+
+def convert_line(line):
+    return {
+        "id": line.id,
+        "text": line.transcription,
+        "np_points": [[int(coordinates[0]), int(coordinates[1])] for coordinates in line.polygon],
+        "np_heights": list(line.heights),
+        "np_confidences": calculate_line_confidence(line),
+        "ligatures_mapping": [[x] for x in range(len(line.transcription))]
+    }
+
+
+def convert_image(region):
+    y1 = min([point[1] for point in region.polygon])
+    y2 = max([point[1] for point in region.polygon])
+
+    height = y2 - y1
+
+    text = "image"
+
+    return {
+        "id": region.id,
+        "text": text,
+        "np_points": [[int(coordinates[0]), int(coordinates[1])] for coordinates in region.polygon],
+        "np_heights": [height, 0],
+        "np_confidences": [1.0] * len(text),
+        "ligatures_mapping": [[x] for x in range(len(text))]
+    }
 
 
 def calculate_line_confidence(line):
