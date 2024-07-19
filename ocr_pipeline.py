@@ -1,21 +1,20 @@
 import os
-import sys
-import argparse
-import config_helper
-import configparser
-import traceback
 import cv2
+import sys
 import time
 import torch
+import argparse
+import traceback
+import configparser
+import faulthandler
+import config_helper
+
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from datetime import datetime
 
 from pero_ocr.core.layout import PageLayout
 from pero_ocr.document_ocr.page_parser import PageParser
-
-
-import faulthandler
 
 
 class NewFileHandler(FileSystemEventHandler):
