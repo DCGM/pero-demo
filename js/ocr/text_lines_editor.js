@@ -244,7 +244,7 @@ class TextLinesEditor
         for (let l of data['lines'])
         {
             let line = new TextLine(l.id, l.annotated, l.text, l.np_confidences, l.ligatures_mapping, l.arabic, l.for_training,
-                                    debug_line_container, debug_line_container_2)
+                                    debug_line_container, debug_line_container_2, l.category, image_id)
             line.np_points = l.np_points;
             line.np_heights = l.np_heights;
             line.focus = false;
@@ -421,7 +421,9 @@ class TextLinesEditor
 
 function get_focus_line_points(line)
 {
-    let show_line_height = 50
+    visual_categories = ["image", "photo", "graph", "initial", "map", "stamp", "code", "schema", "other"]
+
+    let show_line_height = visual_categories.includes(line.category) ? 300 : 50;
     let show_bottom_pad = 100
     let width_boundary = get_line_width_boundary(line);
     let height_boundary = get_line_height_boundary(line);

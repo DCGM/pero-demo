@@ -3,7 +3,7 @@
 class TextLine
 {
     constructor(id, annotated, text, confidences, ligatures_mapping, arabic, for_training, debug_line_container,
-                debug_line_container_2)
+                debug_line_container_2, category, page_id)
     {
         this.id = id;
         this.text = text;
@@ -16,12 +16,23 @@ class TextLine
         this.edited = false;
         this.annotated = annotated;
         this.valid = true;
+        this.category = category;
+        this.page_id = page_id;
 
         this.container = document.createElement("span");
         this.container.setAttribute("class", "text-line");
         this.container.setAttribute("contentEditable", "false");
         this.container.style.display = "block";
         this.container.style.lineHeight = "220%";
+
+        if (this.category == "music")
+        {
+            var midi_player = document.createElement("midi-player");
+            midi_player.setAttribute("src", "/get_music/" + this.page_id + "/" + this.id + "-l000");
+            midi_player.setAttribute("sound-font", "");
+
+            this.container.appendChild(midi_player)
+        }
 
         if(confidences.length > 0){
             var power_const = 5;
@@ -811,6 +822,7 @@ class TextLine
             filtered_text = this.arabic_reshaper.reverse(filtered_text, []);
             filtered_text = filtered_text[0];
         }
+
         return filtered_text;
     }
 

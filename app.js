@@ -17,9 +17,20 @@ var image = null;
 var currentDeviceId = null;
 var devicesId = []
 var requestId = null;
+var resultChecker = null;
 
 var controller = new Controller();
 var text_lines_editor = new TextLinesEditor(document.getElementById('map-container'));
+
+function isTouchDevice(){
+    return true == ("ontouchstart" in window || window.DocumentTouch && document instanceof DocumentTouch);
+}
+
+$(function () {
+    if (isTouchDevice() === false) {
+        $('[data-toggle="tooltip"]').tooltip()
+    }
+})
 
 document.getElementById("snap").addEventListener("click", function () {
     clear();
@@ -32,6 +43,34 @@ document.getElementById("change").addEventListener("click", function () {
 
 document.getElementById("send").addEventListener("click", function () {
     send();
+});
+
+document.getElementById("upload").addEventListener("click", function () {
+    clear();
+    selectImage();
+});
+
+document.getElementById("cancel").addEventListener("click", function () {
+    if (resultChecker != null) {
+        clearInterval(resultChecker);
+    }
+
+    requestId = null;
+
+    clear();
+    controller.goStart();
+});
+
+document.getElementById("play").addEventListener("click", function () {
+    midi_player = document.getElementById("midi-player");
+    midi_player.playButton.click();
+});
+
+document.getElementById("new").addEventListener("click", function () {
+    midi_player = document.getElementById("midi-player");
+    if (midi_player.playing) {
+        midi_player.playButton.click();
+    }
 });
 
 window.addEventListener('popstate', (event) => {    
@@ -53,13 +92,18 @@ async function send() {
 
     upload_url = window.location.origin + '/upload_image'
 
+    data = image
+    if (typeof image != 'string') {
+        data = image.src;
+    }
+
     let response = await fetch(upload_url, {
         method: 'POST',
         headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ image: image })
+        body: JSON.stringify({ image: data })
     })
 
     data = await response.json();
@@ -93,8 +137,49 @@ function snap() {
 
     // base64 encoded image
     image = original_image_canvas.toDataURL('image/jpeg', 0.85);
+}
 
-    //showOutput(image);
+function selectImage() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = input_change_event => {
+        if (input_change_event.target.files && input_change_event.target.files[0]) {
+            var reader = new FileReader();
+
+            reader.onload = reader_onload_event => {
+                if(reader_onload_event.target == null) {
+                    return;
+                }
+
+                if(reader_onload_event.target.result == null) {
+                    return;
+                }
+
+                temp_image = new Image();
+                temp_image.onload = () => {
+                    preview_canvas.width = temp_image.width;
+                    preview_canvas.height = temp_image.height;
+
+                    original_image_canvas.width = temp_image.width;
+                    original_image_canvas.height = temp_image.height;
+
+                    preview_canvas.getContext('2d').drawImage(temp_image, 0, 0, preview_canvas.width, preview_canvas.height);
+                    original_image_canvas.getContext('2d').drawImage(temp_image, 0, 0, original_image_canvas.width, original_image_canvas.height);
+
+                    image = original_image_canvas.toDataURL('image/jpeg', 0.85);
+                }
+
+                temp_image.src = reader_onload_event.target.result;
+
+                controller.goForward();
+            }
+
+            reader.readAsDataURL(input_change_event.target.files[0]);
+        }
+    }
+
+    input.click();
 }
 
 function clear() {
@@ -118,11 +203,12 @@ function startCamera() {
             }
         }
         else {
-            alert("Přístup ke kameře zamítnut.");
+            $('#noCameraPermissionsMessage').collapse('show');
         }
     }
     else {
-        alert("Nebyla nalzena žádná kamera.");
+        console.log("No camera detected");
+        $('#noCameraDetectedMessage').collapse('show');
     }
 }
 
@@ -139,11 +225,16 @@ function startVideoStream() {
         video.play();
 
         currentDeviceId = getDeviceId(video);
+    }).catch(function (error) {
+        $('#noCameraPermissionsMessage').collapse('show');
     });
 }
 
 function stopVideoStream() {
     stream = video.srcObject
+    if (stream == null) {
+        return;
+    }
     stream.getTracks().forEach(function (track) {
         if (track.readyState == 'live') {
             track.stop();
@@ -216,6 +307,8 @@ function setDisabledState(name, value) {
 }
 
 function cameraScreenStart() {
+    setEnabled("upload");
+
     navigator.mediaDevices.enumerateDevices()
         .then(gotDevices)
         .then(startCamera);
@@ -231,11 +324,19 @@ function appStart() {
     }
 }
 
+function previewStart() {
+    $('#uploadingMessage').collapse('hide');
+    $('#noCameraPermissionsMessage').collapse('hide');
+    $('#noCameraDetectedMessage').collapse('hide');
+}
+
 function waitForResult() {
+    $('#uploadingMessage').collapse('hide');
+
     var url = new URL(window.location);
     requestId = url.searchParams.get("id");
 
-    var resultChecker = setInterval(function () {
+    resultChecker = setInterval(function () {
         checkStatus(requestId).then(requestStatus => {
             if (requestStatus == 200) {
                 clearInterval(resultChecker);
@@ -283,9 +384,31 @@ async function checkStatus(requestId) {
     return response.status;
 }
 
+async function updateMusicButton() {
+    let url = "/get_music/" + requestId;
+
+    setDisabled('play');
+
+    fetch(url).then(response => {
+        if (response.status == 200)
+        {
+            setEnabled('play');
+            document.getElementById("midi-player").src = url;
+        }
+        else
+        {
+            setDisabled('play');
+            document.getElementById("midi-player").src = "";
+        }
+    }).catch(error => {
+       console.log(error)
+    });
+}
+
 function showResults() {
     updateLeafletHeight();
     updateTextContainerHeight();
+    updateMusicButton();
 }
 
 function updateLeafletHeight() {  
@@ -333,7 +456,8 @@ function updateContentDimensions() {
     document.getElementById('app-page-controls-2').style.maxHeight = controls_max_height + "px";
     document.getElementById('app-page-controls-3').style.maxHeight = controls_max_height + "px";
 
-    document.getElementById('loading-svg').style.maxHeight = video_max_height + "px";
+    document.getElementById('loading-screen').style.maxHeight = video_max_height + "px";
+    document.getElementById('loading-screen').style.height = video_max_height + "px";
 
     document.getElementById('app-page-content-3-leaflet').style.maxHeight = leaflet_max_height + "px";
     document.getElementById('app-page-content-3-text').style.maxHeight = text_max_height + "px";

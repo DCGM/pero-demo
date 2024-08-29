@@ -22,7 +22,7 @@
     <div id="app" data-on-load="appStart">
       <div class="app-page app-page-hidden" data-app-page="0" data-on-show="cameraScreenStart" data-on-hide="stopCamera">
         <div class="app-header">
-          <h1>PERO App</h1>
+          <h1><a href="/">PERO-OCR Demo App</a></h1>
         </div>
 
         <div class="app-content" id="app-page-content-0">
@@ -36,16 +36,36 @@
         <div class="app-controls" id="app-page-controls-0">
           <div class="row">
             <div class="col-sm-12">
-              <button id="change" type="button" class="btn btn-primary shadow-lg" disabled><img src="icons/switch-camera.png" class="inverted" /></button>
-              <button id="snap" type="button" class="btn btn-primary shadow-lg" disabled data-app-controls-forward><img src="icons/photo-camera.png" class="inverted" /></button>
+              <span class="d-inline-block tooltip-wrapper" data-toggle="tooltip" title="Change camera">
+                <button id="change" type="button" class="btn btn-primary shadow-lg" disabled><img src="icons/switch-camera.png" class="inverted" /></button>
+              </span>
+
+              <span class="d-inline-block tooltip-wrapper" data-toggle="tooltip" title="Capture image">
+                <button id="snap" type="button" class="btn btn-primary shadow-lg" disabled data-app-controls-forward><img src="icons/photo-camera.png" class="inverted" /></button>
+              </span>
+
+              <span class="d-inline-block tooltip-wrapper" data-toggle="tooltip" title="Upload image">
+                <button id="upload" type="button" class="btn btn-primary shadow-lg" disabled><img src="icons/upload.png" class="inverted" /></button>
+              </span>
+
+              <div class="collapse text-center" id="noCameraDetectedMessage">
+                <div class="row statusBar bg-secondary">
+                  <p>No camera detected ...</p>
+                </div>
+              </div>
+              <div class="collapse text-center" id="noCameraPermissionsMessage">
+                <div class="row statusBar bg-secondary">
+                  <p>Camera permissions denied ...</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="app-page app-page-hidden" data-app-page="1">
+      <div class="app-page app-page-hidden" data-app-page="1" data-on-show="previewStart">
         <div class="app-header">
-          <h1>PERO App</h1>
+          <h1><a href="/">PERO-OCR Demo App</a></h1>
         </div>
 
         <div class="app-content" id="app-page-content-1">
@@ -59,11 +79,11 @@
         <div class="app-controls" id="app-page-controls-1">
           <div class="row">
             <div class="col-sm-12">
-              <button id="back" type="button" class="btn btn-primary shadow-lg" data-app-controls-back><img src="icons/left-arrow.png" class="inverted" /></button>
-              <button id="send" type="button" class="btn btn-primary shadow-lg"><img src="icons/text-recognising.png" class="inverted" /></button>
+              <button id="back" type="button" class="btn btn-primary shadow-lg" data-toggle="tooltip" data-placement="top" title="Back" data-app-controls-back><img src="icons/left-arrow.png" class="inverted" /></button>
+              <button id="send" type="button" class="btn btn-primary shadow-lg" data-toggle="tooltip" data-placement="top" title="Process image"><img src="icons/text-recognising.png" class="inverted" /></button>
               <div class="collapse text-center" id="uploadingMessage">
-                <div class="row">
-                  <p>Uploading ...</p>
+                <div class="row statusBar bg-secondary">
+                  <p>Uploading your image ...</p>
                 </div>
               </div>
             </div>
@@ -79,25 +99,18 @@
 
       <div class="app-page app-page-hidden" data-app-page="2" data-on-show="checkRequest">
         <div class="app-header">
-          <h1>PERO App</h1>
+          <h1><a href="/">PERO-OCR Demo App</a></h1>
         </div>
 
         <div class="app-content" id="app-page-content-2">
           <div class="row">
             <div id="loading-screen">
-              <svg version="1.1" id="loading-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-              viewBox="0 0 100 100" enable-background="new 0 0 0 0" xml:space="preserve">
-                <path fill="#008080" d="M73,50c0-12.7-10.3-23-23-23S27,37.3,27,50 M30.9,50c0-10.5,8.5-19.1,19.1-19.1S69.1,39.5,69.1,50">
-                  <animateTransform 
-                  attributeName="transform" 
-                  attributeType="XML" 
-                  type="rotate"
-                  dur="1s" 
-                  from="0 50 50"
-                  to="360 50 50" 
-                  repeatCount="indefinite" />
-                </path>
-              </svg>
+              <div class="row" id="loading-row">
+                <div class="col-sm-12" id="loading-div">
+                  <div class="loader" id="loader"></div>
+                  <p>Processing your image ...</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -105,7 +118,7 @@
         <div class="app-controls" id="app-page-controls-2">
           <div class="row">
             <div class="col-sm-12">
-              <button id="new" type="button" class="btn btn-primary" data-app-controls-start><img src="icons/undo.png" class="inverted" /></button>
+              <button id="cancel" type="button" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Cancel" data-app-controls-start><img src="icons/undo.png" class="inverted" /></button>
             </div>
           </div>
         </div>
@@ -113,7 +126,7 @@
 
       <div class="app-page app-page-hidden" data-app-page="3" data-on-show="showResults">
         <div class="app-header">
-          <h1>PERO App</h1>
+          <h1><a href="/">PERO-OCR Demo App</a></h1>
         </div>
 
         <div class="app-page-content" id="app-page-content-3">
@@ -139,7 +152,13 @@
         <div class="app-controls" id="app-page-controls-3">
           <div class="row">
             <div class="col-sm-12">
-              <button id="new" type="button" class="btn btn-primary" data-app-controls-start><img src="icons/undo.png" class="inverted" /></button>
+              <button id="new" type="button" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="New image" data-app-controls-start><img src="icons/undo.png" class="inverted" /></button>
+
+              <span class="d-inline-block tooltip-wrapper" data-toggle="tooltip" title="Play music">
+                <button id="play" type="button" class="btn btn-primary" disabled><img src="icons/music.png" class="inverted" /></button>
+              </span>
+
+              <midi-player id="midi-player" sound-font style="display: none; visibility: collapse;"></midi-player>
             </div>
           </div>
         </div>
@@ -160,6 +179,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
     integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
     crossorigin="anonymous"></script>
+
+  <script src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.58,npm/@magenta/music@1.22.1/es6/core.js,npm/focus-visible@5,npm/html-midi-player@1.4.0"></script>
 
   <script src="/js/leaflet/leaflet.js"></script>
   <script src="/js/leaflet/Leaflet.Editable.js"></script>

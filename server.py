@@ -2,10 +2,12 @@ import os
 import uuid
 import base64
 import argparse
+from collections import defaultdict
+
 import numpy as np
 from flask import Flask, send_from_directory, send_file, json, request
 
-from pero_ocr.core.layout import PageLayout
+from pero_ocr.core.layout import PageLayout, RegionLayout
 from pero_ocr.core.confidence_estimation import get_line_confidence
 
 import config_helper
@@ -111,6 +113,19 @@ def get_lines(request_id):
     return response
 
 
+@app.route('/get_music/<string:request_id>', defaults={'line_id': None})
+@app.route('/get_music/<string:request_id>/<string:line_id>')
+def get_music(request_id, line_id):
+    midi_file_path = get_midi_path(request_id, line_id)
+
+    if os.path.isfile(midi_file_path):
+        return send_file(midi_file_path)
+    else:
+        return app.response_class(
+            status=204
+        )
+
+
 def get_image_path(request_id):
     return os.path.join(configuration["requests"]["upload_path"], f"{request_id}.jpg")
 
@@ -127,8 +142,49 @@ def get_errors_path(request_id):
     return os.path.join(configuration["requests"]["errors_path"], f"{request_id}.txt")
 
 
+def get_midi_path(request_id, line_id=None):
+    file_name = f"{request_id}.mid" if line_id is None else f"{request_id}_{line_id}.mid"
+    return os.path.join(configuration["requests"]["music_path"], file_name)
+
+
+def get_music_xml_path(request_id):
+    return os.path.join(configuration["requests"]["music_path"], f"{request_id}.xml")
+
+
 def convert_lines(page_layout):
     lines = []
+
+    counts = defaultdict(int)
+    converters = {
+        "Obrázek": (convert_image, "image"),
+        "Kreslený humor/karikatura/komiks": (convert_image, "image"),
+
+        "Fotografie": (convert_photo, "photo"),
+
+        "Graf": (convert_graph, "graph"),
+
+        "Iniciála": (convert_initial, "initial"),
+
+        "Mapa": (convert_map, "map"),
+
+        "Ozdobný nápis": (convert_decorative_text, "decorative_text"),
+
+        "Razítko": (convert_stamp, "stamp"),
+
+        "QR a čárový kód": (convert_code, "code"),
+
+        "Schéma": (convert_schema, "schema"),
+        "Půdorys": (convert_schema, "schema"),
+        "Ostatní výkresy": (convert_schema, "schema"),
+        "Geometrické výkresy": (convert_schema, "schema"),
+
+        "Erb/cejch/logo/symbol": (convert_other, "other"),
+        "Ex libris": (convert_other, "other"),
+        "Ostatní knižní dekor": (convert_other, "other"),
+        "Signet": (convert_other, "other"),
+        "Viněta": (convert_other, "other"),
+        "Vlys": (convert_other, "other"),
+    }
 
     for region in page_layout.regions:
         if region.category in {"text", None}:
@@ -136,10 +192,16 @@ def convert_lines(page_layout):
                 if line.category in {"text", None}:
                     lines.append(convert_line(line))
 
-        elif region.category == "image":
-            lines.append(convert_image(region))
+        elif region.category in converters:
+            converter, category = converters[region.category]
+            counts[category] += 1
+            lines.append(converter(region, counts[category]))
+
+        elif region.category == "Notový zápis":
+            lines.append(convert_music(region))
 
     return lines
+
 
 def convert_line(line):
     return {
@@ -148,26 +210,92 @@ def convert_line(line):
         "np_points": [[int(coordinates[0]), int(coordinates[1])] for coordinates in line.polygon],
         "np_heights": list(line.heights),
         "np_confidences": calculate_line_confidence(line),
-        "ligatures_mapping": [[x] for x in range(len(line.transcription))]
+        "ligatures_mapping": [[x] for x in range(len(line.transcription))],
+        "category": "text"
     }
 
 
-def convert_image(region):
+def convert_image(region, index):
+    return convert_region_object(region, "image", text=f"[Image #{index}]", use_region_transcription=True)
+
+
+def convert_photo(region, index):
+    return convert_region_object(region, "photo", text=f"[Photo #{index}]", use_region_transcription=True)
+
+
+def convert_music(region):
+    return convert_region_object(region, "music")
+
+
+def convert_graph(region, index):
+    return convert_region_object(region, "graph", text=f"[Graph #{index}]", use_region_transcription=True)
+
+
+def convert_initial(region, index):
+    return convert_region_object(region, "initial", text=f"[Initial #{index}]")
+
+
+def convert_map(region, index):
+    return convert_region_object(region, "map", text=f"[Map #{index}]", use_region_transcription=True)
+
+
+def convert_decorative_text(region, index):
+    return convert_region_object(region, "decorative_text", text=f"[Decorative text #{index}]", use_region_transcription=True)
+
+
+def convert_stamp(region, index):
+    return convert_region_object(region, "stamp", text=f"[Stamp #{index}]")
+
+
+def convert_code(region, index):
+    return convert_region_object(region, "code", text=f"[QR/Barcode #{index}]")
+
+
+def convert_schema(region, index):
+    return convert_region_object(region, "schema", text=f"[Schema #{index}]", use_region_transcription=True)
+
+
+def convert_other(region, index):
+    return convert_region_object(region, "other", text=f"[Other object #{index}]")
+
+
+def convert_region_object(region, category, text="", use_region_transcription=False):
     y1 = min([point[1] for point in region.polygon])
     y2 = max([point[1] for point in region.polygon])
 
     height = y2 - y1
 
-    text = "image"
+    if region.transcription is not None and use_region_transcription:
+        text = f"{text} {region.transcription}"
 
     return {
         "id": region.id,
         "text": text,
         "np_points": [[int(coordinates[0]), int(coordinates[1])] for coordinates in region.polygon],
-        "np_heights": [height, 0],
+        "np_heights": [float(height), 0],
         "np_confidences": [1.0] * len(text),
-        "ligatures_mapping": [[x] for x in range(len(text))]
+        "ligatures_mapping": [[x] for x in range(len(text))],
+        "category": category
     }
+
+
+# def convert_music(region):
+#     y1 = min([point[1] for point in region.polygon])
+#     y2 = max([point[1] for point in region.polygon])
+#
+#     height = y2 - y1
+#
+#     text = ""
+#
+#     return {
+#         "id": region.id,
+#         "text": text,
+#         "np_points": [[int(coordinates[0]), int(coordinates[1])] for coordinates in region.polygon],
+#         "np_heights": [float(height), 0],
+#         "np_confidences": [1.0] * len(text),
+#         "ligatures_mapping": [[x] for x in range(len(text))],
+#         "category": "music"
+#     }
 
 
 def calculate_line_confidence(line):
@@ -255,6 +383,7 @@ def make_absolute_paths(config_path):
     configuration["requests"]["result_path"] = get_absolute_path(config_path, configuration["requests"]["result_path"])
     configuration["requests"]["logits_path"] = get_absolute_path(config_path, configuration["requests"]["logits_path"])
     configuration["requests"]["errors_path"] = get_absolute_path(config_path, configuration["requests"]["errors_path"])
+    configuration["requests"]["music_path"] = get_absolute_path(config_path, configuration["requests"]["music_path"])
 
 
 def main():
